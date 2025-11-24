@@ -28,3 +28,17 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Sensitive keys and certificates - NEVER COMMIT THESE!
+*.pem
+private_key.*
+public_key.*
+cert.pem
+key.pem
+vapid_private.pem
+vapid_public.pem
+
+# Database with sensitive data
+instance/
+*.db
+*.sqlite
