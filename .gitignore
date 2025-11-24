@@ -42,3 +42,4 @@ vapid_public.pem
 instance/
 *.db
 *.sqlite
+openssl.cnf
