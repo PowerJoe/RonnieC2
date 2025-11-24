@@ -14,4 +14,4 @@ VAPID_CLAIMS = {
 }
 
 print(f"[+] VAPID keys loaded from files")
-print(f"[+] Public key: {VAPID_PUBLIC_KEY}")
+#print(f"[+] Public key: {VAPID_PUBLIC_KEY}")

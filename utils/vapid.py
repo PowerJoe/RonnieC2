@@ -40,7 +40,7 @@ def init_vapid_keys():
         print(f"[!] No VAPID keys found - run key generation first")
         return
     
-    print(f"[+] VAPID Public Key (base64url): {VAPID_PUBLIC_KEY[:50]}...")
+    #print(f"[+] VAPID Public Key (base64url): {VAPID_PUBLIC_KEY[:50]}...")
 
 def get_vapid_private_key():
     """Get VAPID private key"""
