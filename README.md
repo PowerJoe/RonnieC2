@@ -1,11 +1,11 @@
-# 🎯 PJ131 C2 - Browser Command & Control Framework
+# 🎯 Ronnie C2 - Browser Command & Control Framework
 ```
-██████╗      ██╗ ██╗██████╗  ██╗    ░█████╗░██████╗░
-██╔══██╗     ██║███║╚════██╗███║    ██╔══██╗╚════██╗
-██████╔╝     ██║╚██║ █████╔╝╚██║    ██║  ╚═╝ █████╔╝
-██╔═══╝ ██   ██║ ██║ ╚═══██╗ ██║    ██║  ██╗██╔═══╝ 
-██║     ╚█████╔╝ ██║██████╔╝ ██║    ╚█████╔╝███████╗
-╚═╝      ╚════╝  ╚═╝╚═════╝  ╚═╝     ╚════╝ ╚══════╝
+██████╗  ██████╗ ███╗   ███╗███╗   ██╗██╗███████╗     ██████╗██████╗ 
+██╔══██╗██╔═══██╗████╗ ████║████╗  ██║██║██╔════╝    ██╔════╝╚════██╗
+██████╔╝██║   ██║██╔████╔██║██╔██╗ ██║██║█████╗      ██║      █████╔╝
+██╔══██╗██║   ██║██║╚██╔╝██║██║╚██╗██║██║██╔══╝      ██║     ██╔═══╝ 
+██║  ██║╚██████╔╝██║ ╚═╝ ██║██║ ╚████║██║███████╗    ╚██████╗███████╗
+╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝╚══════╝     ╚═════╝╚══════╝
 ```
 
 > **Browser-based Command & Control framework leveraging Web Push Notifications**
@@ -20,7 +20,7 @@ A proof-of-concept C2 framework that demonstrates how browser push notifications
 
 ## 🎬 Demo
 
-[Include screenshot or video link here]
+[To be done]
 
 ---
 
@@ -49,7 +49,7 @@ A proof-of-concept C2 framework that demonstrates how browser push notifications
 ## 🏗️ Architecture
 ```
 ┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   Victim    │ HTTPS   │   PJ131 C2   │ WebPush │   Browser   │
+│   Victim    │ HTTPS   │   Ronnie C2   │ WebPush │   Browser   │
 │   Browser   ├────────►│    Server    ├────────►│Push Service │
 │             │         │   (Flask)    │         │  (Mozilla)  │
 └─────────────┘         └──────────────┘         └─────────────┘
@@ -85,10 +85,10 @@ cd RonnieC2
 
 2. **Create virtual environment:**
 ```bash
-python3 -m venv browser_c2
-source browser_c2/bin/activate  # Linux/Mac
+python3 -m venv RonnieC2
+source Ronnie2/bin/activate  # Linux/Mac
 # or
-browser_c2\Scripts\activate  # Windows
+RonnieC2\Scripts\activate  # Windows
 ```
 
 3. **Install dependencies:**
@@ -237,7 +237,7 @@ Edge: Same as Chrome policies
 
 ## 📁 Project Structure
 ```
-PJ131-C2/
+Ronnie-C2/
 ├── app.py                 # Main Flask application
 ├── models/               # Database models
 │   ├── __init__.py
@@ -303,15 +303,6 @@ Contributions are welcome! Please:
 
 ---
 
-## 📺 Follow Me
-
-**Hackin' with PJ131**
-- 🎥 YouTube: [Hackin' with PJ131](https://youtube.com/@your-channel)
-- 💼 LinkedIn: [Connect with me](https://linkedin.com/in/your-profile)
-- 🐦 Twitter: [@PJ131](https://twitter.com/your-handle)
-
----
-
 ## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -320,10 +311,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Credits
 
-**Developed by:** Hackin' with PJ131
+**Developed by:** -Pj131 & The Cyberpreneur
 
-**Special Thanks:**
-- The cybersecurity research community
+**Special Thanks to:**
+- Absolutely nobody, the double champ does what he wants
 - OWASP for security resources
 - Flask and Python communities
 

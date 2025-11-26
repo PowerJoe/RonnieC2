@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###############################################################################
-# PJ131 C2 Backup Script
+# Ronnie C2 Backup Script
 # Creates timestamped backups of EVERYTHING
 ###############################################################################
 
@@ -15,12 +15,12 @@ NC='\033[0m' # No Color
 # Configuration
 BACKUP_DIR="backups"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_NAME="pj131c2_backup_${TIMESTAMP}"
+BACKUP_NAME="ronniec2_backup_${TIMESTAMP}"
 BACKUP_PATH="${BACKUP_DIR}/${BACKUP_NAME}"
 
 echo -e "${BLUE}"
 echo "============================================================"
-echo "🔒 PJ131 C2 Complete Backup Script"
+echo "🔒 Ronnie C2 Complete Backup Script"
 echo "============================================================"
 echo -e "${NC}"
 
@@ -30,19 +30,19 @@ mkdir -p "${BACKUP_PATH}"
 echo -e "${YELLOW}[+] Creating full backup: ${BACKUP_NAME}${NC}"
 
 # Backup database
-if [ -f "instance/pj131c2.db" ]; then
+if [ -f "instance/ronniec2.db" ]; then
     echo -e "${GREEN}[+] Backing up database...${NC}"
     mkdir -p "${BACKUP_PATH}/instance"
-    cp instance/pj131c2.db "${BACKUP_PATH}/instance/pj131c2.db"
+    cp instance/ronniec2.db "${BACKUP_PATH}/instance/ronniec2.db"
     
     # Also create SQL dump for easy inspection
-    sqlite3 instance/pj131c2.db .dump > "${BACKUP_PATH}/instance/pj131c2_dump.sql"
+    sqlite3 instance/ronniec2.db .dump > "${BACKUP_PATH}/instance/ronniec2_dump.sql"
     
     # Get database stats
-    AGENT_COUNT=$(sqlite3 instance/pj131c2.db "SELECT COUNT(*) FROM agents;" 2>/dev/null || echo "0")
-    COOKIE_COUNT=$(sqlite3 instance/pj131c2.db "SELECT COUNT(*) FROM stolen_cookies;" 2>/dev/null || echo "0")
-    FINGERPRINT_COUNT=$(sqlite3 instance/pj131c2.db "SELECT COUNT(*) FROM enhanced_fingerprints;" 2>/dev/null || echo "0")
-    COMMAND_COUNT=$(sqlite3 instance/pj131c2.db "SELECT COUNT(*) FROM commands;" 2>/dev/null || echo "0")
+    AGENT_COUNT=$(sqlite3 instance/ronniec2.db "SELECT COUNT(*) FROM agents;" 2>/dev/null || echo "0")
+    COOKIE_COUNT=$(sqlite3 instance/ronniec2.db "SELECT COUNT(*) FROM stolen_cookies;" 2>/dev/null || echo "0")
+    FINGERPRINT_COUNT=$(sqlite3 instance/ronniec2.db "SELECT COUNT(*) FROM enhanced_fingerprints;" 2>/dev/null || echo "0")
+    COMMAND_COUNT=$(sqlite3 instance/ronniec2.db "SELECT COUNT(*) FROM commands;" 2>/dev/null || echo "0")
     
     echo "  ✓ Database backed up"
     echo "    - Agents: ${AGENT_COUNT}"
@@ -151,7 +151,7 @@ fi
 
 # Create backup info file
 cat > "${BACKUP_PATH}/backup_info.txt" << INFO
-PJ131 C2 Complete Backup
+Ronnie C2 Complete Backup
 =========================
 Backup Date: $(date)
 Backup Name: ${BACKUP_NAME}

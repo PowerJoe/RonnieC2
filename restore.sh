@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###############################################################################
-# PJ131 C2 Restore Script
+# Ronnie C2 Restore Script
 # Restores from backup archive
 ###############################################################################
 
@@ -29,7 +29,7 @@ fi
 
 echo -e "${BLUE}"
 echo "============================================================"
-echo "🔄 PJ131 C2 Restore Script"
+echo "🔄 Ronnie C2 Restore Script"
 echo "============================================================"
 echo -e "${NC}"
 
@@ -49,10 +49,10 @@ echo -e "${GREEN}[+] Extracting backup...${NC}"
 tar -xzf "$BACKUP_FILE" -C backups/
 
 # Restore database
-if [ -f "backups/${BACKUP_DIR}/pj131c2.db" ]; then
+if [ -f "backups/${BACKUP_DIR}/ronniec2.db" ]; then
     echo -e "${GREEN}[+] Restoring database...${NC}"
     mkdir -p instance
-    cp "backups/${BACKUP_DIR}/pj131c2.db" instance/pj131c2.db
+    cp "backups/${BACKUP_DIR}/ronniec2.db" instance/ronniec2.db
     echo "  ✓ Database restored"
 fi
 
