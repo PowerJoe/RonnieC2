@@ -20,7 +20,7 @@ A proof-of-concept C2 framework that demonstrates how browser push notifications
 
 ## 🎬 Demo
 
-[To be done]
+[![I Planted a JS Agent in a Browser - Here's What the Hacker Sees](https://img.youtube.com/vi/UQapQ4ja8W0/maxresdefault.jpg)](https://youtu.be/UQapQ4ja8W0)
 
 ---
 
